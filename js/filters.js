@@ -11,42 +11,70 @@ class HostelFilter {
     init() {
         this.setupFilterListeners();
         this.setupSortListeners();
+        this.setupSearchListener();
         this.loadHostels();
+    }
+
+    setupSearchListener() {
+        // Search input
+        const searchInput = document.getElementById('hostel-search');
+        const searchButton = document.querySelector('.btn-search-full');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', () => this.applyFilters());
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.applyFilters();
+                }
+            });
+        }
+
+        if (searchButton) {
+            searchButton.addEventListener('click', () => this.applyFilters());
+        }
     }
 
     setupFilterListeners() {
         // Location checkboxes
-        document.querySelectorAll('.filter-checkbox[name="location"]').forEach(checkbox => {
+        document.querySelectorAll('.filter-checkbox input[name="location"]').forEach(checkbox => {
             checkbox.addEventListener('change', () => this.applyFilters());
         });
 
         // Price range slider
-        const priceSlider = document.getElementById('price-range');
+        const priceSlider = document.querySelector('.price-slider');
         if (priceSlider) {
             priceSlider.addEventListener('input', (e) => {
-                document.getElementById('price-value').textContent =
-                    `NPR ${parseInt(e.target.value).toLocaleString()}`;
+                // Update display if there's a price value element
+                const priceValue = document.getElementById('price-value');
+                if (priceValue) {
+                    priceValue.textContent = `NPR ${parseInt(e.target.value).toLocaleString()}`;
+                }
             });
             priceSlider.addEventListener('change', () => this.applyFilters());
         }
 
         // Room type checkboxes
-        document.querySelectorAll('.filter-checkbox[name="room-type"]').forEach(checkbox => {
+        document.querySelectorAll('.filter-checkbox input[name="room-type"]').forEach(checkbox => {
             checkbox.addEventListener('change', () => this.applyFilters());
         });
 
         // Amenities checkboxes
-        document.querySelectorAll('.filter-checkbox[name="amenities"]').forEach(checkbox => {
+        document.querySelectorAll('.filter-checkbox input[name="amenity"]').forEach(checkbox => {
             checkbox.addEventListener('change', () => this.applyFilters());
         });
 
-        // Gender preference
+        // Gender preference (if exists)
         document.querySelectorAll('.filter-radio[name="gender"]').forEach(radio => {
             radio.addEventListener('change', () => this.applyFilters());
         });
 
         // Rating filter
-        document.querySelectorAll('.filter-checkbox[name="rating"]').forEach(checkbox => {
+        document.querySelectorAll('.filter-checkbox input[name="rating"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => this.applyFilters());
+        });
+
+        // Hostel type filter
+        document.querySelectorAll('.filter-checkbox input[name="type"]').forEach(checkbox => {
             checkbox.addEventListener('change', () => this.applyFilters());
         });
 
@@ -58,7 +86,7 @@ class HostelFilter {
     }
 
     setupSortListeners() {
-        const sortSelect = document.getElementById('sort-by');
+        const sortSelect = document.getElementById('sort-select');
         if (sortSelect) {
             sortSelect.addEventListener('change', () => this.sortHostels());
         }
@@ -68,12 +96,17 @@ class HostelFilter {
         // Get all hostel cards
         const hostelCards = document.querySelectorAll('.hostel-list-item');
         this.hostels = Array.from(hostelCards).map(card => {
+            const nameElement = card.querySelector('h3');
+            const locationElement = card.querySelector('.hostel-list-location span');
+            const priceElement = card.querySelector('.price-amount');
+            const ratingElement = card.querySelector('.hostel-list-rating span');
+
             return {
                 element: card,
-                name: card.querySelector('h3')?.textContent || '',
-                location: card.querySelector('.location')?.textContent || '',
-                price: this.extractPrice(card.querySelector('.price')?.textContent || ''),
-                rating: parseFloat(card.querySelector('.rating span')?.textContent || '0'),
+                name: nameElement?.textContent || '',
+                location: locationElement?.textContent || '',
+                price: this.extractPrice(priceElement?.textContent || ''),
+                rating: parseFloat(ratingElement?.textContent.split('(')[0] || '0'),
                 amenities: this.extractAmenities(card),
                 roomType: this.extractRoomType(card),
                 gender: card.dataset.gender || 'mixed'
@@ -89,8 +122,14 @@ class HostelFilter {
 
     extractAmenities(card) {
         const amenities = [];
-        card.querySelectorAll('.amenities span, .amenities-grid span').forEach(span => {
-            amenities.push(span.textContent.toLowerCase());
+        card.querySelectorAll('.hostel-list-features span').forEach(span => {
+            const text = span.textContent.toLowerCase();
+            if (text.includes('wifi')) amenities.push('wifi');
+            if (text.includes('parking')) amenities.push('parking');
+            if (text.includes('breakfast')) amenities.push('breakfast');
+            if (text.includes('ac') || text.includes('conditioning')) amenities.push('ac');
+            if (text.includes('laundry')) amenities.push('laundry');
+            if (text.includes('gym')) amenities.push('gym');
         });
         return amenities;
     }
@@ -106,6 +145,14 @@ class HostelFilter {
 
     applyFilters() {
         this.filteredHostels = this.hostels.filter(hostel => {
+            // Search filter
+            const searchTerm = document.getElementById('hostel-search')?.value.toLowerCase().trim() || '';
+            if (searchTerm) {
+                const matchesSearch = hostel.name.toLowerCase().includes(searchTerm) ||
+                    hostel.location.toLowerCase().includes(searchTerm);
+                if (!matchesSearch) return false;
+            }
+
             // Location filter
             const selectedLocations = this.getCheckedValues('location');
             if (selectedLocations.length > 0) {
@@ -158,12 +205,12 @@ class HostelFilter {
     }
 
     getCheckedValues(name) {
-        const checked = document.querySelectorAll(`.filter-checkbox[name="${name}"]:checked, .filter-radio[name="${name}"]:checked`);
+        const checked = document.querySelectorAll(`.filter-checkbox input[name="${name}"]:checked, .filter-radio[name="${name}"]:checked`);
         return Array.from(checked).map(cb => cb.value);
     }
 
     sortHostels() {
-        const sortBy = document.getElementById('sort-by')?.value || 'popular';
+        const sortBy = document.getElementById('sort-select')?.value || 'popular';
 
         switch (sortBy) {
             case 'price-low':
@@ -186,7 +233,7 @@ class HostelFilter {
     }
 
     displayResults() {
-        const hostelList = document.querySelector('.hostel-list');
+        const hostelList = document.querySelector('.hostels-list');
         if (!hostelList) return;
 
         // Hide all hostels
@@ -200,9 +247,9 @@ class HostelFilter {
         });
 
         // Update results count
-        const resultsCount = document.querySelector('.results-count');
-        if (resultsCount) {
-            resultsCount.textContent = `${this.filteredHostels.length} accommodations found`;
+        const resultsHeader = document.querySelector('.results-header h3');
+        if (resultsHeader) {
+            resultsHeader.textContent = `${this.filteredHostels.length} hostels found`;
         }
 
         // Show no results message
@@ -211,18 +258,19 @@ class HostelFilter {
             if (!noResults) {
                 noResults = document.createElement('div');
                 noResults.className = 'no-results';
+                noResults.style.cssText = 'text-align: center; padding: 3rem; grid-column: 1/-1;';
                 noResults.innerHTML = `
-                    <i class="fas fa-search"></i>
-                    <h3>No accommodations found</h3>
+                    <i class="fas fa-search" style="font-size: 3rem; color: var(--text-gray); margin-bottom: 1rem;"></i>
+                    <h3>No hostels found</h3>
                     <p>Try adjusting your filters or search criteria</p>
-                    <button class="btn btn-primary btn-clear-filters">Clear Filters</button>
+                    <button class="btn btn-primary btn-clear-filters" style="margin-top: 1rem;">Clear Filters</button>
                 `;
                 hostelList.appendChild(noResults);
                 noResults.querySelector('.btn-clear-filters').addEventListener('click', () => {
                     this.clearAllFilters();
                 });
             }
-            noResults.style.display = 'flex';
+            noResults.style.display = 'block';
         } else {
             const noResults = hostelList.querySelector('.no-results');
             if (noResults) {
@@ -232,8 +280,14 @@ class HostelFilter {
     }
 
     clearAllFilters() {
+        // Clear search input
+        const searchInput = document.getElementById('hostel-search');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
         // Uncheck all checkboxes
-        document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.filter-checkbox input[type="checkbox"]').forEach(cb => cb.checked = false);
 
         // Reset radio buttons
         document.querySelectorAll('.filter-radio').forEach(radio => {
@@ -241,14 +295,13 @@ class HostelFilter {
         });
 
         // Reset price slider
-        const priceSlider = document.getElementById('price-range');
+        const priceSlider = document.querySelector('.price-slider');
         if (priceSlider) {
             priceSlider.value = priceSlider.max;
-            document.getElementById('price-value').textContent = `NPR ${parseInt(priceSlider.max).toLocaleString()}`;
         }
 
         // Reset sort
-        const sortSelect = document.getElementById('sort-by');
+        const sortSelect = document.getElementById('sort-select');
         if (sortSelect) {
             sortSelect.value = 'popular';
         }

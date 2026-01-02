@@ -35,7 +35,7 @@ body {
 
 
 .image-logo {
-    width: 100px;
+    width: 80px;
     border-radius: 5%;
     object-fit: cover;
 }
@@ -169,7 +169,10 @@ button {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.3);
+    background: url('../images/hostels/mountain.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .hero-content {
@@ -911,7 +914,7 @@ button {
 /* Placeholder for images */
 img[src*="images/"] {
     background: linear-gradient(135deg, #e0e7ff 0%, #e5e7eb 100%);
-    min-height: 200px;
+    min-height: 40px;
 }
 
 /* ========================================
@@ -984,6 +987,12 @@ img[src*="images/"] {
     border-radius: 12px;
     box-shadow: var(--shadow);
     margin-bottom: 1rem;
+    max-width: 280px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .filter-group h4 {
@@ -997,6 +1006,8 @@ img[src*="images/"] {
     gap: 0.8rem;
     margin-bottom: 0.8rem;
     cursor: pointer;
+    flex-wrap: wrap;
+    max-width: 100%;
 }
 
 .filter-checkbox input {
